@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 1.0
+.VERSION 0.1.0
 
 .GUID 650c2ef0-89ba-42cf-8c23-733924510e4e
 
@@ -15,7 +15,7 @@
 
 .LICENSEURI
 
-.PROJECTURI
+.PROJECTURI https://github.com/FingerhutAsCode/ADCleanup
 
 .ICONURI
 
@@ -30,7 +30,9 @@
 
 .PRIVATEDATA
 
-#>
+#> 
+
+
 
 <# 
 
@@ -40,7 +42,10 @@
 #> 
 
 [CmdletBinding()]
-param()
+param(
+    [Parameter(Mandatory=$false)]
+    [switch] $SendReport
+)
 
 # Import Configuration
 [xml]$XML = Get-Content ".\Config.xml" -Raw
@@ -73,12 +78,29 @@ $UserReportName = $UserReportName -replace "!Date!", $(Get-Date -Format 'yyyyMMd
 $UserPropertiesString = ($UserSettings | Where-Object { $_.Name -eq "Properties" }).Value -replace " ", ""
 $UserProperties = $UserPropertiesString.Split(",")
 
+# Report Settings
+$ReportSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "Report" }).Setting
+$ReportFrom = ($ReportSettings | Where-Object { $_.Name -eq "From" }).Value
+$ReportTo = ($ReportSettings | Where-Object { $_.Name -eq "To" }).Value
+$ReportServer = ($ReportSettings | Where-Object { $_.Name -eq "Server" }).Value
+
+
+# Report Paths
+$UserReportFullName = "$UserReportPath\$UserReportName"
+$ComputerReportFullName = "$ComputerReportPath\$ComputerReportName"
+
+
 # Import Modules
 Import-Module ActiveDirectory
 
 # Get Inactive Objects
 $InactiveComputers = Search-ADAccount -Server $DomainController -AccountInactive -TimeSpan "$ComputerInactiveThreashold.00:00:00" -ComputersOnly | Get-ADComputer -Server $DomainController -Properties $ComputerProperties | Select-Object $ComputerProperties
-$InactiveUsers = Search-ADAccount -Server $DomainController -AccountInactive -TimeSpan "$UserInactiveThreashold.00:00:00" -UsersOnly | Get-ADUSer -Server $DomainController -Properties $UserProperties | Select-Object $UserProperties
+$InactiveUsers = Search-ADAccount -Server $DomainController -AccountInactive -TimeSpan "$UserInactiveThreashold.00:00:00" -UsersOnly | Get-ADUser -Server $DomainController -Properties $UserProperties | Select-Object $UserProperties
 
-$InactiveComputers | Export-CSV -Path "$ComputerReportPath\$ComputerReportName" -NoTypeInformation
-$InactiveUsers | Export-CSV -Path "$UserReportPath\$UserReportName" -NoTypeInformation
+$InactiveComputers | Export-Csv -Path $ComputerReportFullName -NoTypeInformation
+$InactiveUsers | Export-Csv -Path $UserReportFullName -NoTypeInformation
+
+if($SendReport)
+{
+    .\Send-Report.ps1 -ToEmailAddress $ReportTo -FromEmailAddress $ReportFrom -SMTPServerAddress $ReportServer -Attachments $ComputerReportFullName, $UserReportFullName
+}
