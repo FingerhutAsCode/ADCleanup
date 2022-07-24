@@ -55,6 +55,9 @@ $ComputerSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "Computer" }
 $ComputerInactiveThreashold = ($ComputerSettings | Where-Object { $_.Name -eq "Inactive Threashold" }).Value
 $ComputerExpirationThreashold = ($ComputerSettings | Where-Object { $_.Name -eq "Expiration Threashold" }).Value
 $ComputerInactiveOU = ($ComputerSettings | Where-Object { $_.Name -eq "Inactive OU" }).Value
+$ComputerReportPath = ($ComputerSettings | Where-Object { $_.Name -eq "Report Path" }).Value
+$ComputerReportName = ($ComputerSettings | Where-Object { $_.Name -eq "Report Name" }).Value
+$ComputerReportName = $ComputerReportName -replace "!Date!", $(Get-Date -Format 'yyyyMMdd') -replace "!Time!", $(Get-Date -Format 'hhmmss')
 
 # User Settings
 $UserSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "User" }).Setting
@@ -69,6 +72,5 @@ Import-Module ActiveDirectory
 $InactiveComputers = Search-ADAccount -Server $DomainController -AccountInactive -TimeSpan "$ComputerInactiveThreashold.00:00:00" -ComputersOnly
 $InactiveUsers = Search-ADAccount -Server $DomainController -AccountInactive -TimeSpan "$UserInactiveThreashold.00:00:00" -UsersOnly
 
-
-$InactiveComputers
+$InactiveComputers | Export-CSV -Path "$ComputerReportPath\$ComputerReportName" -NoTypeInformation
 $InactiveUsers
