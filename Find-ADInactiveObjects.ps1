@@ -58,19 +58,27 @@ $ComputerInactiveOU = ($ComputerSettings | Where-Object { $_.Name -eq "Inactive 
 $ComputerReportPath = ($ComputerSettings | Where-Object { $_.Name -eq "Report Path" }).Value
 $ComputerReportName = ($ComputerSettings | Where-Object { $_.Name -eq "Report Name" }).Value
 $ComputerReportName = $ComputerReportName -replace "!Date!", $(Get-Date -Format 'yyyyMMdd') -replace "!Time!", $(Get-Date -Format 'hhmmss')
+$ComputerPropertiesString = ($ComputerSettings | Where-Object { $_.Name -eq "Properties" }).Value -replace " ", ""
+$ComputerProperties = $ComputerPropertiesString.Split(",")
+
 
 # User Settings
 $UserSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "User" }).Setting
 $UserInactiveThreashold = ($UserSettings | Where-Object { $_.Name -eq "Inactive Threashold" }).Value
 $UserExpirationThreashold = ($UserSettings | Where-Object { $_.Name -eq "Expiration Threashold" }).Value
-$UserInactiveOU = ($ComputerSettings | Where-Object { $_.Name -eq "Inactive OU" }).Value
+$UserInactiveOU = ($UserSettings | Where-Object { $_.Name -eq "Inactive OU" }).Value
+$UserReportPath = ($UserSettings | Where-Object { $_.Name -eq "Report Path" }).Value
+$UserReportName = ($UserSettings | Where-Object { $_.Name -eq "Report Name" }).Value
+$UserReportName = $UserReportName -replace "!Date!", $(Get-Date -Format 'yyyyMMdd') -replace "!Time!", $(Get-Date -Format 'hhmmss')
+$UserPropertiesString = ($UserSettings | Where-Object { $_.Name -eq "Properties" }).Value -replace " ", ""
+$UserProperties = $UserPropertiesString.Split(",")
 
 # Import Modules
 Import-Module ActiveDirectory
 
 # Get Inactive Objects
-$InactiveComputers = Search-ADAccount -Server $DomainController -AccountInactive -TimeSpan "$ComputerInactiveThreashold.00:00:00" -ComputersOnly
-$InactiveUsers = Search-ADAccount -Server $DomainController -AccountInactive -TimeSpan "$UserInactiveThreashold.00:00:00" -UsersOnly
+$InactiveComputers = Search-ADAccount -Server $DomainController -AccountInactive -TimeSpan "$ComputerInactiveThreashold.00:00:00" -ComputersOnly | Get-ADComputer -Server $DomainController -Properties $ComputerProperties | Select-Object $ComputerProperties
+$InactiveUsers = Search-ADAccount -Server $DomainController -AccountInactive -TimeSpan "$UserInactiveThreashold.00:00:00" -UsersOnly | Get-ADUSer -Server $DomainController -Properties $UserProperties | Select-Object $UserProperties
 
 $InactiveComputers | Export-CSV -Path "$ComputerReportPath\$ComputerReportName" -NoTypeInformation
-$InactiveUsers
+$InactiveUsers | Export-CSV -Path "$UserReportPath\$UserReportName" -NoTypeInformation
