@@ -51,21 +51,24 @@ $DomainName = ($DomainSettings | Where-Object { $_.Name -eq "Domain Name" }).Val
 $DomainController = ($DomainSettings | Where-Object { $_.Name -eq "Domain Controller" }).Value
 
 # Computer Settings
-$ComputerSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "Computers" }).Setting
+$ComputerSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "Computer" }).Setting
 $ComputerInactiveThreashold = ($ComputerSettings | Where-Object { $_.Name -eq "Inactive Threashold" }).Value
 $ComputerExpirationThreashold = ($ComputerSettings | Where-Object { $_.Name -eq "Expiration Threashold" }).Value
+$ComputerInactiveOU = ($ComputerSettings | Where-Object { $_.Name -eq "Inactive OU" }).Value
 
-
-
+# User Settings
+$UserSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "User" }).Setting
+$UserInactiveThreashold = ($UserSettings | Where-Object { $_.Name -eq "Inactive Threashold" }).Value
+$UserExpirationThreashold = ($UserSettings | Where-Object { $_.Name -eq "Expiration Threashold" }).Value
+$UserInactiveOU = ($ComputerSettings | Where-Object { $_.Name -eq "Inactive OU" }).Value
 
 # Import Modules
 Import-Module ActiveDirectory
 
-$InactiveComputers = Search-ADAccount -AccountInactive -TimeSpan "$ComputerInactiveThreashold.00:00:00" -ComputersOnly
+# Get Inactive Objects
+$InactiveComputers = Search-ADAccount -Server $DomainController -AccountInactive -TimeSpan "$ComputerInactiveThreashold.00:00:00" -ComputersOnly
+$InactiveUsers = Search-ADAccount -Server $DomainController -AccountInactive -TimeSpan "$UserInactiveThreashold.00:00:00" -UsersOnly
 
 
 $InactiveComputers
-
-
-# Export-Csv -Path "C:\users\bfinger\Downloads\InactiveComputers.csv" -NoTypeInformation
-
+$InactiveUsers
