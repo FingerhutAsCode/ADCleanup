@@ -165,10 +165,10 @@ function Disable-ADComputer {
     $Computer = $null
     $Computer = Get-ADComputer $ADComputer
     if ($Computer) {
-        $ComputerDescription = (Get-ADComputer $Computer -Properties Description).Description
-        Set-ADComputer $Computer -Description "Disabled by ADCleanup $(Get-Date -Format 'yyyy-MM-dd'); $ComputerDescription"
-        Move-ADObject $Computer -TargetPath $TargetOU
-        Disable-ADAccount $Computer
+        $ComputerDescription = (Get-ADComputer $Computer -Server $DomainController -Properties Description).Description
+        Set-ADComputer $Computer -Server $DomainController -Description "Disabled by ADCleanup $(Get-Date -Format 'yyyy-MM-dd'); $ComputerDescription"
+        Disable-ADAccount $Computer -Server $DomainController
+        Move-ADObject $Computer -Server $DomainController -TargetPath $TargetOU
         Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "AD Computer [$($Computer.Name)] has been disabled"
         return $true
     }
@@ -186,10 +186,10 @@ function Disable-ADUser {
     $User = $null
     $User = Get-ADUser $ADUser
     if ($User) {
-        $UserDescription = (Get-ADUser $User -Properties Description).Description
-        Set-ADUser $User -Description "Disabled by ADCleanup $(Get-Date -Format 'yyyy-MM-dd'); $UserDescription"
-        Move-ADObject $User -TargetPath $TargetOU
-        Disable-ADAccount $User
+        $UserDescription = (Get-ADUser $User -Server $DomainController -Properties Description).Description
+        Set-ADUser $User -Server $DomainController -Description "Disabled by ADCleanup $(Get-Date -Format 'yyyy-MM-dd'); $UserDescription"
+        Disable-ADAccount $User -Server $DomainController
+        Move-ADObject $User -Server $DomainController -TargetPath $TargetOU
         Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "AD User [$($User.Name)] has been disabled"
         return $true
     }
@@ -210,7 +210,7 @@ $InactiveUsers | Export-Csv -Path $UserReportFullName -NoTypeInformation
 if ($ProcessInactiveComputers) {
     foreach ($Object in $InactiveComputers) {
         Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "AD Computer [$($Object.Name)] has been identified as inactive"
-        Disable-ADComputer -ADComputer $Object -TargetOU $ComputerDisabledOU
+        Disable-ADComputer -ADComputer $($Object.Name) -TargetOU $ComputerDisabledOU
     }
 }
 
