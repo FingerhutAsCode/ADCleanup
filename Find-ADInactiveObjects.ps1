@@ -84,6 +84,10 @@ $ComputerReportName = ($ComputerSettings | Where-Object { $_.Name -eq "Report Na
 $ComputerReportName = $ComputerReportName -replace "!Date!", $(Get-Date -Format 'yyyyMMdd') -replace "!Time!", $(Get-Date -Format 'hhmmss')
 $ComputerPropertiesString = ($ComputerSettings | Where-Object { $_.Name -eq "Properties" }).Value -replace " ", ""
 $ComputerProperties = $ComputerPropertiesString.Split(",")
+if (-not($ComputerProperties.Contains("Name"))) {
+    $ComputerProperties += "Name"
+}
+
 
 # User Settings
 $UserSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "User" }).Setting
@@ -95,6 +99,10 @@ $UserReportName = ($UserSettings | Where-Object { $_.Name -eq "Report Name" }).V
 $UserReportName = $UserReportName -replace "!Date!", $(Get-Date -Format 'yyyyMMdd') -replace "!Time!", $(Get-Date -Format 'hhmmss')
 $UserPropertiesString = ($UserSettings | Where-Object { $_.Name -eq "Properties" }).Value -replace " ", ""
 $UserProperties = $UserPropertiesString.Split(",")
+if (-not($UserProperties.Contains("DisplayName"))) {
+    $UserProperties += "DisplayName"
+}
+
 
 # Report Settings
 $ReportSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "Report" }).Setting
@@ -112,7 +120,7 @@ foreach ($Module in $ScriptInfo.ExternalModuleDependencies) {
     $ModuleActive = $null
     $ModuleActive = Get-Module | Where-Object {$_.Name -eq "$Module"}
     if ($ModuleActive) {
-        Write-Host "Module [$Module] loaded sucessfully"
+        Write-Host "Module [$Module] loaded sucessfully" -ForegroundColor Green
     }
     else {
         Write-Error "Module [$Module] failed to load"
