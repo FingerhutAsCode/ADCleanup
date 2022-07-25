@@ -132,29 +132,29 @@ Start-Log -LogPath $LogPath -LogName $LogName -ScriptVersion $ScriptVersion -ToS
 $LogFullName = "$LogPath\$LogName"
 
 # Log Domain Config Settings
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "Domain Name [$DomainName]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "Domain Controller [$DomainController]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Domain Name [$DomainName]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Domain Controller [$DomainController]"
 
 # Log Computer Config Settings
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "Computer Inactive Threashold [$ComputerInactiveThreashold]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "Computer Expiration Threashold [$ComputerExpirationThreashold]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "Computer Disabled OU [$ComputerDisabledOU]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "Computer Report Path [$ComputerReportPath]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "Computer Report Name [$ComputerReportName]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "Computer Properties [$ComputerPropertiesString]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer Inactive Threashold [$ComputerInactiveThreashold]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer Expiration Threashold [$ComputerExpirationThreashold]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer Disabled OU [$ComputerDisabledOU]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer Report Path [$ComputerReportPath]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer Report Name [$ComputerReportName]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer Properties [$ComputerPropertiesString]"
 
 # Log User Config Settings
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "User Inactive Threashold [$UserInactiveThreashold]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "User Expiration Threashold [$UserExpirationThreashold]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "User Disabled OU [$UserDisabledOU]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "User Report Path [$UserReportPath]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "User Report Name [$UserReportName]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "User Properties [$UserPropertiesString]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "User Inactive Threashold [$UserInactiveThreashold]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "User Expiration Threashold [$UserExpirationThreashold]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "User Disabled OU [$UserDisabledOU]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "User Report Path [$UserReportPath]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "User Report Name [$UserReportName]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "User Properties [$UserPropertiesString]"
 
 # Log Report Config Settings
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "Report From [$ReportFrom]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "Report To [$ReportTo]"
-Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "Report Server [$ReportServer]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Report From [$ReportFrom]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Report To [$ReportTo]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Report Server [$ReportServer]"
 
 
 function Disable-ADComputer {
@@ -163,17 +163,17 @@ function Disable-ADComputer {
         $TargetOU
     )
     $Computer = $null
-    $Computer = Get-ADComputer $ADComputer
+    $Computer = Get-ADComputer $ADComputer -Server $DomainController
     if ($Computer) {
         $ComputerDescription = (Get-ADComputer $Computer -Server $DomainController -Properties Description).Description
-        Set-ADComputer $Computer -Server $DomainController -Description "Disabled by ADCleanup $(Get-Date -Format 'yyyy-MM-dd'); $ComputerDescription"
+        Set-ADComputer $Computer -Server $DomainController -Description "Disabled by ADCleanup [$(Get-Date -Format 'yyyy-MM-dd')]; $ComputerDescription"
         Disable-ADAccount $Computer -Server $DomainController
         Move-ADObject $Computer -Server $DomainController -TargetPath $TargetOU
-        Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "AD Computer [$($Computer.Name)] has been disabled"
+        Write-LogInfo -LogPath $LogFullName -ToScreen -Message "AD Computer [$($Computer.Name)] has been disabled"
         return $true
     }
     else {
-        Write-LogError -LogPath $LogFullName -TimeStamp -ToScreen -Message "AD Computer [$($Computer.Name)] could not be found"
+        Write-LogError -LogPath $LogFullName -ToScreen -Message "AD Computer [$($Computer.Name)] could not be found"
         return $false
     }
 }
@@ -184,20 +184,51 @@ function Disable-ADUser {
         $TargetOU
     )
     $User = $null
-    $User = Get-ADUser $ADUser
+    $User = Get-ADUser $ADUser -Server $DomainController
     if ($User) {
         $UserDescription = (Get-ADUser $User -Server $DomainController -Properties Description).Description
-        Set-ADUser $User -Server $DomainController -Description "Disabled by ADCleanup $(Get-Date -Format 'yyyy-MM-dd'); $UserDescription"
+        Set-ADUser $User -Server $DomainController -Description "Disabled by ADCleanup [$(Get-Date -Format 'yyyy-MM-dd')]; $UserDescription"
         Disable-ADAccount $User -Server $DomainController
         Move-ADObject $User -Server $DomainController -TargetPath $TargetOU
-        Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "AD User [$($User.Name)] has been disabled"
+        Write-LogInfo -LogPath $LogFullName -ToScreen -Message "AD User [$($User.Name)] has been disabled"
         return $true
     }
     else {
-        Write-LogError -LogPath $LogFullName -TimeStamp -ToScreen -Message "AD User [$($User.Name)] could not be found"
+        Write-LogError -LogPath $LogFullName -ToScreen -Message "AD User [$($User.Name)] could not be found"
         return $false
     }
 }
+
+function Get-ExpiredADComputers {
+    param (
+        $TargetOU,
+        $MaxAge
+    )
+    $Computers = Get-ADComputer -Filter * -Server $DomainController -Properties Description
+    $ExpiredComputers = @()
+    foreach ($Computer in $Computers) {
+        Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Reviewing computer [$($Computer.Name)]"
+        $IsDateInEntry = $null
+        $ComputerDisabledAge = $null
+        $ComputerDescriptionLatestEntry = $Computer.Description.Substring($Computer.Description.IndexOf('Disabled by ADCleanup'),$Computer.Description.IndexOf(';'))
+        $IsDateInEntry = ($ComputerDescriptionLatestEntry | Select-String -Pattern '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]').Matches
+        if ($IsDateInEntry.count -eq 1) {
+            $ComputerDisabledDate = $ComputerDescriptionLatestEntry.Substring($IsDateInEntry.Index, $IsDateInEntry.Length)
+            $ComputerDisabledAge = New-TimeSpan -Start $ComputerDisabledDate -End $(Get-Date -Format 'yyyy-MM-dd')
+            Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer [$($Computer.Name)] has been disabled for [$($ComputerDisabledAge.days)] days"
+        }
+        else {
+            Write-LogWarning -LogPath $LogFullName -ToScreen -Message "Unable to determine computer [$($Computer.Name)] disabled age, must be reviewed manually"
+        }
+        if ($ComputerDisabledAge -gt $MaxAge) {
+            Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer [$($Computer.Name)] has been disabled for more than the max [$MaxAge] days, adding to expired list"
+            $ExpiredComputers += $Computer
+        }
+    }
+    return $ExpiredComputers
+}
+
+
 
 
 # Get Inactive Objects
@@ -209,20 +240,29 @@ $InactiveUsers | Export-Csv -Path $UserReportFullName -NoTypeInformation
 
 if ($ProcessInactiveComputers) {
     foreach ($Object in $InactiveComputers) {
-        Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "AD Computer [$($Object.Name)] has been identified as inactive"
+        Write-LogInfo -LogPath $LogFullName -ToScreen -Message "AD Computer [$($Object.Name)] has been identified as inactive"
         Disable-ADComputer -ADComputer $($Object.Name) -TargetOU $ComputerDisabledOU
     }
 }
 
 if ($ProcessInactiveUsers) {
     foreach ($Object in $InactiveUsers) {
-        Write-LogInfo -LogPath $LogFullName -TimeStamp -ToScreen -Message "AD User [$($Object.Name)] has been identified as inactive"
+        Write-LogInfo -LogPath $LogFullName -ToScreen -Message "AD User [$($Object.Name)] has been identified as inactive"
         Disable-ADUser -ADComputer $Object -TargetOU $UserDisabledOU
     }
 }
+
+if ($ProcessExpiredComputers) {
+    $ExpiredADComputers = Get-ExpiredADComputers -TargetOU $ComputerDisabledOU -MaxAge $ComputerExpirationThreashold
+    $ExpiredADComputers
+
+}
+
+
+
 
 if ($SendReport) {
     .\Send-Report.ps1 -ToEmailAddress $ReportTo -FromEmailAddress $ReportFrom -SMTPServerAddress $ReportServer -Attachments $ComputerReportFullName, $UserReportFullName
 }
 
-Stop-Log -LogPath $LogPath -LogName $LogName -ToScreen
+Stop-Log -LogPath $LogFullName -ToScreen
