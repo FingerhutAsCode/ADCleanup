@@ -266,7 +266,10 @@ if ($ProcessExpiredComputers) {
             Remove-ADObject $Computer -Server $DomainController
             Write-LogInfo -LogPath $LogFullName -ToScreen -Message "AD Computer [$($Computer.Name)] has been deleted" 
         }
-    }  
+    }
+    else {
+        Write-LogError -LogPath $LogFullName -ToScreen -Message "Active Directory Recycle Bin cannot be confirmed as active, no computers will be deleted"
+    }
 }
 
 
