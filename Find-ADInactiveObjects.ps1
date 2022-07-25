@@ -73,7 +73,7 @@ $LogName = $LogName -replace "!Date!", $(Get-Date -Format 'yyyyMMdd') -replace "
 $DomainSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "Domain" }).Setting
 $DomainName = ($DomainSettings | Where-Object { $_.Name -eq "Domain Name" }).Value
 $DomainController = ($DomainSettings | Where-Object { $_.Name -eq "Domain Controller" }).Value
-$DomainDN = ($DomainSettings | Where-Object { $_.Name -eq "Distinguished Name" }).Value
+$DomainDN = ($DomainSettings | Where-Object { $_.Name -eq "Distinguished Name" }).Value -replace " ", ""
 
 # Computer Settings
 $ComputerSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "Computer" }).Setting
@@ -232,6 +232,22 @@ function Get-ExpiredADComputers {
     return $ExpiredComputers
 }
 
+function Test-RecycleBin {
+    $RecycleBinADOptionalFeaturePath = "CN=Recycle Bin Feature,CN=Optional Features,CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,$DomainDN"
+    $RecycleBinStatus = Get-ADOptionalFeature -Identity $RecycleBinADOptionalFeaturePath -Properties *
+    foreach ($Scope in $RecycleBinStatus.EnabledScopes) {
+        if ($Scope -like "*$DomainDN*") {
+            $Active = $true
+        }
+    }
+    if ($Active) {
+        return $true
+    }
+    else {
+        return $false
+    }
+}
+
 
 
 
@@ -258,13 +274,12 @@ if ($ProcessInactiveUsers) {
 
 if ($ProcessExpiredComputers) {
     $ExpiredADComputers = Get-ExpiredADComputers -TargetOU $ComputerDisabledOU -MaxAge $ComputerExpirationThreashold
-    $RecycleBinADOptionalFeaturePath = "CN=Recycle Bin Feature,CN=Optional Features,CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,$DomainDN"
-    $RecycleBinStatus = Get-ADOptionalFeature -Identity $RecycleBinADOptionalFeaturePath -Properties *
-    if ($RecycleBinStatus.EnabledScopes -like "*$DomainDN*") {
+    $RecycleBinActive = Test-RecycleBin
+    if ($RecycleBinActive) {
         Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Active Directory Recycle Bin identifed as active, expired computer processing can continue"
-        foreach ($Computer in $ExpiredADComputers) {
-            Remove-ADObject $Computer -Server $DomainController
-            Write-LogInfo -LogPath $LogFullName -ToScreen -Message "AD Computer [$($Computer.Name)] has been deleted" 
+        foreach ($Computer in $ExpiredADComputers.Name) {
+            Remove-ADComputer $Computer -Server $DomainController -Confirm:$false
+            Write-LogInfo -LogPath $LogFullName -ToScreen -Message "AD Computer [$Computer] has been deleted" 
         }
     }
     else {
