@@ -259,7 +259,7 @@ if ($ProcessInactiveUsers) {
 if ($ProcessExpiredComputers) {
     $ExpiredADComputers = Get-ExpiredADComputers -TargetOU $ComputerDisabledOU -MaxAge $ComputerExpirationThreashold
     $RecycleBinADOptionalFeaturePath = "CN=Recycle Bin Feature,CN=Optional Features,CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,$DomainDN"
-    $RecycleBinStatus = = Get-ADOptionalFeature -Identity $RecycleBinADOptionalFeaturePath -Properties *
+    $RecycleBinStatus = Get-ADOptionalFeature -Identity $RecycleBinADOptionalFeaturePath -Properties *
     if ($RecycleBinStatus.EnabledScopes -like "*$DomainDN*") {
         Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Active Directory Recycle Bin identifed as active, expired computer processing can continue"
         foreach ($Computer in $ExpiredADComputers) {
