@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 0.1.0
+.VERSION 0.2.0
 
 .GUID 650c2ef0-89ba-42cf-8c23-733924510e4e
 
@@ -73,6 +73,7 @@ $LogName = $LogName -replace "!Date!", $(Get-Date -Format 'yyyyMMdd') -replace "
 $DomainSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "Domain" }).Setting
 $DomainName = ($DomainSettings | Where-Object { $_.Name -eq "Domain Name" }).Value
 $DomainController = ($DomainSettings | Where-Object { $_.Name -eq "Domain Controller" }).Value
+$DomainDN = ($DomainSettings | Where-Object { $_.Name -eq "Distinguished Name" }).Value
 
 # Computer Settings
 $ComputerSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "Computer" }).Setting
@@ -134,6 +135,7 @@ $LogFullName = "$LogPath\$LogName"
 # Log Domain Config Settings
 Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Domain Name [$DomainName]"
 Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Domain Controller [$DomainController]"
+Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Domain Distinguished Name [$DomainDN]"
 
 # Log Computer Config Settings
 Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer Inactive Threashold [$ComputerInactiveThreashold]"
@@ -201,26 +203,28 @@ function Disable-ADUser {
 
 function Get-ExpiredADComputers {
     param (
-        $TargetOU,
-        $MaxAge
+        [string]$TargetOU,
+        [int]$MaxAge
     )
-    $Computers = Get-ADComputer -Filter * -Server $DomainController -Properties Description
+    $Computers = Get-ADComputer -Filter * -Server $DomainController -SearchBase $TargetOU -Properties Description
     $ExpiredComputers = @()
     foreach ($Computer in $Computers) {
         Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Reviewing computer [$($Computer.Name)]"
         $IsDateInEntry = $null
         $ComputerDisabledAge = $null
         $ComputerDescriptionLatestEntry = $Computer.Description.Substring($Computer.Description.IndexOf('Disabled by ADCleanup'),$Computer.Description.IndexOf(';'))
+        Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer [$($Computer.Name)] latest entry [$ComputerDescriptionLatestEntry]"
         $IsDateInEntry = ($ComputerDescriptionLatestEntry | Select-String -Pattern '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]').Matches
         if ($IsDateInEntry.count -eq 1) {
-            $ComputerDisabledDate = $ComputerDescriptionLatestEntry.Substring($IsDateInEntry.Index, $IsDateInEntry.Length)
-            $ComputerDisabledAge = New-TimeSpan -Start $ComputerDisabledDate -End $(Get-Date -Format 'yyyy-MM-dd')
+            $ComputerDisabledDate = $IsDateInEntry.Value
+            Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer [$($Computer.Name)] disabled date [$ComputerDisabledDate]"
+            $ComputerDisabledAge = New-TimeSpan -Start "$ComputerDisabledDate" -End $(Get-Date -Format 'yyyy-MM-dd')
             Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer [$($Computer.Name)] has been disabled for [$($ComputerDisabledAge.days)] days"
         }
         else {
             Write-LogWarning -LogPath $LogFullName -ToScreen -Message "Unable to determine computer [$($Computer.Name)] disabled age, must be reviewed manually"
         }
-        if ($ComputerDisabledAge -gt $MaxAge) {
+        if ($ComputerDisabledAge.days -gt $MaxAge) {
             Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Computer [$($Computer.Name)] has been disabled for more than the max [$MaxAge] days, adding to expired list"
             $ExpiredComputers += $Computer
         }
@@ -254,8 +258,15 @@ if ($ProcessInactiveUsers) {
 
 if ($ProcessExpiredComputers) {
     $ExpiredADComputers = Get-ExpiredADComputers -TargetOU $ComputerDisabledOU -MaxAge $ComputerExpirationThreashold
-    $ExpiredADComputers
-
+    $RecycleBinADOptionalFeaturePath = "CN=Recycle Bin Feature,CN=Optional Features,CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,$DomainDN"
+    $RecycleBinStatus = = Get-ADOptionalFeature -Identity $RecycleBinADOptionalFeaturePath -Properties *
+    if ($RecycleBinStatus.EnabledScopes -like "*$DomainDN*") {
+        Write-LogInfo -LogPath $LogFullName -ToScreen -Message "Active Directory Recycle Bin identifed as active, expired computer processing can continue"
+        foreach ($Computer in $ExpiredADComputers) {
+            Remove-ADObject $Computer -Server $DomainController
+            Write-LogInfo -LogPath $LogFullName -ToScreen -Message "AD Computer [$($Computer.Name)] has been deleted" 
+        }
+    }  
 }
 
 
