@@ -53,7 +53,7 @@ foreach ($Attachment in $Attachments) {
 #splat parameters
 $Parameters = @{
     "UseSecureConnectionIfAvailable" = $UseSecureConnectionIfAvailable    
-    "SMTPServer" = $SMTPServer
+    "SMTPServer" = $SMTPServerAddress
     "Port" = $Port
     "From" = $From
     "RecipientList" = $RecipientList

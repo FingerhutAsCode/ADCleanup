@@ -82,7 +82,7 @@ $UserProperties = $UserPropertiesString.Split(",")
 $ReportSettings = ($XML.Config.Group | Where-Object { $_.Name -eq "Report" }).Setting
 $ReportFrom = ($ReportSettings | Where-Object { $_.Name -eq "From" }).Value
 $ReportTo = ($ReportSettings | Where-Object { $_.Name -eq "To" }).Value
-$ReportServer = ($ReportSettings | Where-Object { $_.Name -eq "Server" }).Value
+$ReportServer = ($ReportSettings | Where-Object { $_.Name -eq "SMTPServer" }).Value
 
 
 # Report Paths
