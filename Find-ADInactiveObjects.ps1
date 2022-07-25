@@ -118,7 +118,7 @@ $ComputerReportFullName = "$ComputerReportPath\$ComputerReportName"
 foreach ($Module in $ScriptInfo.ExternalModuleDependencies) {
     Import-Module $Module -ErrorAction Continue
     $ModuleActive = $null
-    $ModuleActive = Get-Module | Where-Object {$_.Name -eq "$Module"}
+    $ModuleActive = Get-Module | Where-Object { $_.Name -eq "$Module" }
     if ($ModuleActive) {
         Write-Host "Module [$Module] loaded sucessfully" -ForegroundColor Green
     }
